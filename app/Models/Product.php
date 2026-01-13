@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Scopes\ActiveScope;
+use App\Models\Scopes\WithMediaScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,7 @@ class Product extends Model
             $product->ulid = (string) Str::ulid();
         });
         static::addGlobalScope(ActiveScope::class);
+        static::addGlobalScope(WithMediaScope::class);
     }
 
 

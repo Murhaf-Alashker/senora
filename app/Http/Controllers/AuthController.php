@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ChangePasswordRequest;
+use App\Http\Requests\LoginRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,15 +15,17 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
-    public function login(Request $request):JsonResponse
+    public function login(LoginRequest $request):JsonResponse
     {
         try{
-            $user = User::where('email',$request->email)->first();
-            if(!$user || !Hash::check( $request->password , $user->password )){
+            $info = $request->validated();
+            $user = User::where('email',$info['email'])->first();
+            if(!$user || !Hash::check( $info['password'] , $user->password )){
                 return response()->json(['message' => __('message.wrong_email_or_password')],400);
             }
 
-            $token = $user->createToken('user_token',['api-user'])->plainTextToken;
+            $user->tokens()->delete();
+            $token = $user->createToken('user_token',['api'],Carbon::now()->addHours(8))->plainTextToken;
 
             return response()->json(['message' => __('message.login_successfully'), 'token' => $token]);
         }catch (\Exception $e){
@@ -29,11 +33,10 @@ class AuthController extends Controller
         }
 
     }
-
-    public function resetPasswordUsingOldPassword(Request $request):JsonResponse
+    public function resetPasswordUsingOldPassword(ChangePasswordRequest $request):JsonResponse
     {
         try{
-            $user = Auth::user();
+            $user = Auth::guard('api')->user();
             if(!$user || !Hash::check($request->old_password,$user->password)){
                 return response()->json(['message' => __('message.wrong_password')], 400);
             }
@@ -45,6 +48,7 @@ class AuthController extends Controller
             throw new \Exception(__('message.something_wrong'),500);
         }
     }
+
     public function loginUsingGoogle(Request $request):JsonResponse
     {
         try {

@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Enum\MediaType;
 use App\Http\Requests\CreateProductRequest;
+use App\Http\Resources\CategoryResource;
+use App\Http\Resources\ProductResource;
 use App\Models\Category;
 use App\Models\Media;
 use App\Models\Product;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -28,43 +31,45 @@ class ProductController extends Controller
         return response()->json($items);
     }
 
-    public function index():LengthAwarePaginator
+    public function index():AnonymousResourceCollection
     {
-         return Product::inRandomOrder()->paginate(15);
+         return ProductResource::collection(Product::inRandomOrder()->paginate(15));
     }
 
-    public function show($ulid)
+    public function show(string $ulid):ProductResource
     {
-         return Product::where('ulid', $ulid)->firstOrFail();
+         return new ProductResource(Product::where('ulid', $ulid)->firstOrFail());
 
     }
 
-    public function latestProduct():LengthAwarePaginator
+    public function latestProduct():AnonymousResourceCollection
     {
-        return Product::latest()->paginate(15);
+        return ProductResource::collection(Product::latest()->paginate(15));
     }
 
-    public function mostPopularProduct():LengthAwarePaginator
+    public function mostPopularProduct():AnonymousResourceCollection
     {
-        return Product::orderBy('visitor','desc')->paginate(15);
+        return ProductResource::collection(Product::orderBy('visitor','desc')->paginate(15));
     }
 
-    public function mostOrderedProduct():LengthAwarePaginator
+    public function mostOrderedProduct():AnonymousResourceCollection
     {
-        return Product::orderBy('orders','desc')->paginate(15);
+        return ProductResource::collection(Product::orderBy('orders','desc')->paginate(15));
     }
 
-    public function productByCategory(Request $request ,$ulid):LengthAwarePaginator
+    public function productByCategory(string $ulid):AnonymousResourceCollection
     {
         $category = Category::where('ulid',$ulid)->whereHas('products')->firstOrFail();
-        return $category->products()->paginate(15);
+        return ProductResource::collection($category->products()->paginate(15));
     }
 
-    public function categoryWithItsProduct():LengthAwarePaginator
+    public function categoryWithItsProduct(): AnonymousResourceCollection
     {
-        return Category::where('active',true)->with('products',function ($q){
+        $categories = Category::where('active',true)->with('products',function ($q){
             return $q->where('active',true)->latest()->take(10)->get();
         })->paginate(15);
+
+        return CategoryResource::collection($categories);
     }
     public function store(CreateProductRequest $request):JsonResponse
     {
@@ -82,10 +87,10 @@ class ProductController extends Controller
 
            $this->storeManyMedia($request, $product);
         }
-        return response()->json(['message' =>'تم إنشاء المنتج الجديد بنجاح!','product' => $product->load('media')]);
+        return response()->json(['message' =>'تم إنشاء المنتج الجديد بنجاح!','product' => new ProductResource($product->load('media'))]);
     }
 
-    public function update(CreateProductRequest $request,$ulid):JsonResponse
+    public function update(CreateProductRequest $request,string $ulid):JsonResponse
     {
         $product = Product::where('ulid',$ulid)->firstOrFail();
         $wanted_media = $request->wanted_media ?? [];
@@ -94,17 +99,21 @@ class ProductController extends Controller
         $product->update($info);
         if(!empty($wanted_media)){
             $all_media = Media::whereNotIn('id',is_array($wanted_media) ? $wanted_media : [$wanted_media])->get();
-            foreach ($all_media as $media){
-                Storage::disk('public')->delete($this->FILE_PATH.'/'.$product->id.'/'.$media->type.'/'.$media->path);
-            }
-            Media::whereIn('id',$all_media->pluck('id')->toArray())->delete();
         }
+        else{
+            $all_media =$product->media;
+        }
+        foreach ($all_media as $media){
+            Storage::disk('public')->delete($this->FILE_PATH.'/'.$product->id.'/'.$media->type.'/'.$media->path);
+        }
+        Media::whereIn('id',$all_media->pluck('id')->toArray())->delete();
+
         if($request->hasFile('media')){
             $this->storeManyMedia($request, $product);
         }
-        return response()->json(['message' =>'تم تحديث المنتج بنجاح!','product' => $product->load('media')]);
+        return response()->json(['message' =>'تم تحديث المنتج بنجاح!','product' => new ProductResource($product->load('media'))]);
     }
-    private function getType($extension):string
+    private function getType(string $extension):string
     {
         if(in_array($extension,MediaType::images())){
             return 'images';
@@ -120,6 +129,15 @@ class ProductController extends Controller
         );
 
         return array_values(array_unique($element));
+    }
+
+    public function changeStatus(Request $request,$ulid):JsonResponse
+    {
+        $message = ['تم تعديل حالة المنتج بنحاج,لن يظهر المنتج المحدد الى المستخدمين بعد الآن','تم تعديل حالة المنتج بنحاج,سيعود هذا المنتج متاحا للمستخدمين'];
+        $product = Product::where('ulid',$ulid)->firstOrFail();
+        $product->active = abs($product->active - 1);
+        $product->save();
+        return response()->json($message[$product->active]);
     }
 
     private function storeManyMedia(Request $request,Product $product):void
