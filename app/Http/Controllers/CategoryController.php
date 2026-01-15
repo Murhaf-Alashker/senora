@@ -18,7 +18,7 @@ class CategoryController extends Controller
         return CategoryResource::collection(Category::tap(function ($q)
         {
             return auth()->guard('api')->check()? $q : $q->whereHas('products');
-        })->paginate(10));
+        })->get());
     }
 
     public function store(Request $request){

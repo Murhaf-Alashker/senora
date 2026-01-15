@@ -23,10 +23,10 @@ class ProductController extends Controller
     public function homePage():JsonResponse
     {
         $items = [
-            'latest_products' => $this->latestProduct(),
-            'most_popular_product' => $this->mostPopularProduct(),
-            'most_ordered_product' => $this->mostOrderedProduct(),
-            'category_with_its_product'=> $this->categoryWithItsProduct(),
+            'latest_products' => $this->latestProduct()->response()->getData(true),
+            'most_popular_product' => $this->mostPopularProduct()->response()->getData(true),
+            'most_ordered_product' => $this->mostOrderedProduct()->response()->getData(true),
+            'category_with_its_product'=> $this->categoryWithItsProduct()->response()->getData(true),
         ];
         return response()->json($items);
     }
@@ -96,6 +96,8 @@ class ProductController extends Controller
         $wanted_media = $request->wanted_media ?? [];
         $info = $request->validated();
         unset($info['wanted_media']);
+        $info['colors'] = $this->avoidDuplicate($info['colors']);
+        $info['sizes'] = $this->avoidDuplicate($info['sizes']);
         $product->update($info);
         if(!empty($wanted_media)){
             $all_media = Media::whereNotIn('id',is_array($wanted_media) ? $wanted_media : [$wanted_media])->get();
@@ -127,8 +129,10 @@ class ProductController extends Controller
             fn ($v) => preg_replace('/\s+/u', ' ', trim($v)),
             $element
         );
+        $element = array_values(array_unique($element));
+        sort($element);
 
-        return array_values(array_unique($element));
+        return $element;
     }
 
     public function changeStatus(Request $request,$ulid):JsonResponse

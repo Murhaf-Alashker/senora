@@ -23,13 +23,14 @@ class ProductFactory extends Factory
         $all_color = [];
         for($x = 0; $x <= $i; $x++) {
             $element[] = $this->faker->randomElement($sizes);
-            $sizes = array_filter($sizes, fn($v) => $v != $element);
+            $sizes = array_filter($sizes, fn($v) => $v != $element[count($element) - 1]);
         }
+        sort($element);
         $colors = ['احمر','اخضر','اصفر','زهري','اسود'];
         $i = rand(0, count($colors) - 1);
         for($x = 0; $x <= $i; $x++) {
             $all_color[] = $this->faker->randomElement($colors);
-            $colors = array_filter($colors, fn($v) => $v != $all_color);
+            $colors = array_filter($colors, fn($v) => $v != $all_color[count($all_color) - 1]);
         }
         $categories = Category::pluck('id')->toArray();
         return [

@@ -11,7 +11,7 @@ Route::get('/user', function (Request $request) {
     return $p;
 });
 
-Route::get('/',[ProductController::class,'homePage'])->middleware('throttle:once-per-10-seconds');
+Route::get('/',[ProductController::class,'homePage']);
 Route::get('/products',[ProductController::class,'index']);
 Route::get('/products/{ulid}',[ProductController::class,'show']);
 Route::get('/categories/{ulid}/products',[ProductController::class,'productByCategory']);
