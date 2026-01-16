@@ -23,7 +23,6 @@ return new class extends Migration
             $table->boolean('active')->default(true);
             $table->json('colors');
             $table->json('sizes');
-            $table->foreignIdFor(\App\Models\Category::class)->constrained()->cascadeOnDelete();
             $table->timestamps();
         });
     }

@@ -9,26 +9,23 @@ use App\Http\Resources\ProductResource;
 use App\Models\Category;
 use App\Models\Media;
 use App\Models\Product;
-use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    private string $CACHE_VISITOR_KEY = 'products:views:inc';
+    private string $CACHE_ORDER_KEY = 'products:order:inc';
     protected string $FILE_PATH = 'uploads/products/';
     public function homePage():JsonResponse
     {
-        $items = [
-            'latest_products' => $this->latestProduct()->response()->getData(true),
-            'most_popular_product' => $this->mostPopularProduct()->response()->getData(true),
-            'most_ordered_product' => $this->mostOrderedProduct()->response()->getData(true),
-            'category_with_its_product'=> $this->categoryWithItsProduct()->response()->getData(true),
-        ];
-        return response()->json($items);
+        return response()->json($this->getHomeProduct());
     }
 
     public function index():AnonymousResourceCollection
@@ -38,8 +35,11 @@ class ProductController extends Controller
 
     public function show(string $ulid):ProductResource
     {
-         return new ProductResource(Product::where('ulid', $ulid)->firstOrFail());
-
+        $product = Product::where('ulid', $ulid)->firstOrFail();
+        if(!auth()->guard('api')->check()){
+            Redis::hincrby($this->CACHE_VISITOR_KEY, (string)$product->id, 1);
+        }
+         return new ProductResource($product);
     }
 
     public function latestProduct():AnonymousResourceCollection
@@ -71,23 +71,26 @@ class ProductController extends Controller
 
         return CategoryResource::collection($categories);
     }
-    public function store(CreateProductRequest $request):JsonResponse
+    public function store(CreateProductRequest $request): JsonResponse
     {
         $info = $request->validated();
         $product = Product::create([
             'name' => $info['name'],
             'price' => $info['price'],
+            'description' => $info['description'],
             'custom_tailoring' => $info['custom_tailoring'],
             'colors' => $this->avoidDuplicate($info['colors']),
             'sizes' => $this->avoidDuplicate($info['sizes']),
-            'category_id' => $info['category_id'],
         ]);
+
+        $product->categories()->sync($info['categories']);
 
         if($request->hasFile('media')){
 
            $this->storeManyMedia($request, $product);
         }
-        return response()->json(['message' =>'تم إنشاء المنتج الجديد بنجاح!','product' => new ProductResource($product->load('media'))]);
+        $this->restoreAllCache();
+        return response()->json(['message' =>'تم إنشاء المنتج الجديد بنجاح!','product' => new ProductResource($product->refresh()->load('media'))]);
     }
 
     public function update(CreateProductRequest $request,string $ulid):JsonResponse
@@ -95,10 +98,12 @@ class ProductController extends Controller
         $product = Product::where('ulid',$ulid)->firstOrFail();
         $wanted_media = $request->wanted_media ?? [];
         $info = $request->validated();
+        $categories = Category::whereIn('ulid',$info['categories'])->pluck('id')->toArray();
         unset($info['wanted_media']);
         $info['colors'] = $this->avoidDuplicate($info['colors']);
         $info['sizes'] = $this->avoidDuplicate($info['sizes']);
         $product->update($info);
+        $product->categories()->sync($categories);
         if(!empty($wanted_media)){
             $all_media = Media::whereNotIn('id',is_array($wanted_media) ? $wanted_media : [$wanted_media])->get();
         }
@@ -113,6 +118,7 @@ class ProductController extends Controller
         if($request->hasFile('media')){
             $this->storeManyMedia($request, $product);
         }
+        $this->restoreAllCache();
         return response()->json(['message' =>'تم تحديث المنتج بنجاح!','product' => new ProductResource($product->load('media'))]);
     }
     private function getType(string $extension):string
@@ -155,5 +161,76 @@ class ProductController extends Controller
         }
         $product->media()->createMany($all_media);
     }
+
+
+    private function getHomeProduct(): array
+    {
+        $key = 'homeProduct';
+
+        // 1️⃣ إذا موجود رجّعه
+        $cached = Cache::get($key);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        // 2️⃣ Lock لإعادة البناء + التفريغ
+        $this->restoreCache($key);
+        return Cache::get($key);
+    }
+
+    private function restoreAllCache():void
+    {
+        $this->restoreCache($this->CACHE_VISITOR_KEY);
+        $this->restoreCache($this->CACHE_ORDER_KEY);
+    }
+
+    private function restoreCache($key):void
+    {
+        Cache::lock('homeProduct:rebuild', 20)->block(5, function () use ($key) {
+
+            // 3️⃣ فلّش عدادات المنتجات من Redis → DB
+            $this->flushAllProductViewsToDb($this->CACHE_VISITOR_KEY);
+            $this->flushAllProductViewsToDb($this->CACHE_ORDER_KEY);
+
+            // 4️⃣ ابنِ الكاش
+            return Cache::remember($key, 3600, function () {
+                return [
+                    'latest_products' => $this->latestProduct()->response()->getData(true),
+                    'most_popular_product' => $this->mostPopularProduct()->response()->getData(true),
+                    'most_ordered_product' => $this->mostOrderedProduct()->response()->getData(true),
+                    'category_with_its_product'=> $this->categoryWithItsProduct()->response()->getData(true),
+                ];
+            });
+        });
+    }
+
+    private function flushAllProductViewsToDb(string $src): void
+    {
+        $tmp = $src.':flushing';
+
+        // إذا ما في شي، اطلع
+        if (!Redis::exists($src)) return;
+
+        // انقل كل العدادات لاسم مؤقت (عملية واحدة)
+        // هيك أي زيادات جديدة رح تروح للـ src بعد ما نعمله فاضي
+        Redis::rename($src, $tmp);
+        $all = Redis::hgetall($tmp); // [productId => count]
+
+        if (empty($all)) {
+            return;
+        }
+
+        foreach ($all as $productId => $count) {
+            $count = (int) $count;
+            if ($count <= 0) continue;
+
+            DB::table('products')
+                ->where('id', (int)$productId)
+                ->increment('visitor', $count);
+
+            Redis::hdel('products:views:inc', (string)$productId);
+        }
+    }
+
 
 }

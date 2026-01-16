@@ -12,7 +12,7 @@ class CreateProductRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return auth()->guard('api')->check();
     }
 
     /**
@@ -31,7 +31,8 @@ class CreateProductRequest extends FormRequest
             'colors.*' => ['required', 'string', 'max:255','min:3'],
             'sizes' => ['required', 'array'],
             'sizes.*' => ['required', 'numeric','between:30,50','multiple_of:2'],
-            'category_id' => ['required', 'exists:categories,id'],
+            'categories' => ['required', 'array'],
+            'categories.*' => ['required', 'exists:categories,id'],
             'media' => ['sometimes', 'array'],
             'media.*' => ['required', 'file','mimes:'. implode(',',MediaType::values()),'max:7166'],
             'wanted_media' => ['sometimes', 'array'],

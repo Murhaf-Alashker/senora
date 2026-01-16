@@ -13,6 +13,6 @@ class WithMediaScope implements Scope
      */
     public function apply(Builder $builder, Model $model): void
     {
-        $builder->with(['media']);
+        $builder->with(['media','categories']);
     }
 }

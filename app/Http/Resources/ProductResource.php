@@ -16,6 +16,7 @@ class ProductResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $is_admin = auth()->guard('api')->check();
         $allMedia = ['images' => [], 'videos' => []];
         if(!empty($this->media)){
             foreach ($this->media as $media){
@@ -32,16 +33,16 @@ class ProductResource extends JsonResource
             'orders_count' => $this->orders,
             'colors' => $this->colors,
             'sizes' => $this->sizes,
+            'categories' => CategoryResource::collection($this->categories),
             'images' => $allMedia['images'],
             'videos' => $allMedia['videos'],
 
         ];
         $more_info = [
             'is_active' => $this->active,
-            'category_id' => $this->category_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
         ];
-        return auth()->guard('api')->check() ? array_merge($for_user, $more_info) : $for_user;
+        return $is_admin ? array_merge($for_user, $more_info) : $for_user;
     }
 }

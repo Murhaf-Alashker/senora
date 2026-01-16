@@ -34,9 +34,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         RateLimiter::for('once-per-10-seconds', function () {
-            return Limit::perSecond(1,10)->by(request()->ip())->response(function () {
+            return Limit::perSecond(1,5)->by(request()->ip())->response(function () {
                 return response()->json([
-                    'message' => 'الرجاء الانتظار 10 ثواني قبل إعادة المحاولة'
+                    'message' => 'الرجاء الانتظار 5 ثواني قبل إعادة المحاولة'
                 ], 429);
             });
         });

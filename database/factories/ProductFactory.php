@@ -32,14 +32,12 @@ class ProductFactory extends Factory
             $all_color[] = $this->faker->randomElement($colors);
             $colors = array_filter($colors, fn($v) => $v != $all_color[count($all_color) - 1]);
         }
-        $categories = Category::pluck('id')->toArray();
         return [
             'name' => fake()->name(),
             'price' => rand(1, 100),
             'custom_tailoring' => fake()->boolean(),
             'visitor' => rand(1, 100),
             'orders' => rand(1, 100),
-            'category_id' => $this->faker->randomElement($categories),
             'sizes' => $element,
             'colors' => $all_color,
         ];
