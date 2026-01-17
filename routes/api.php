@@ -11,32 +11,35 @@ Route::get('/user', function (Request $request) {
     return $p;
 });
 
-Route::get('/',[ProductController::class,'homePage']);
-Route::get('/products',[ProductController::class,'index']);
-Route::get('/products/{ulid}',[ProductController::class,'show']);
-Route::get('/categories/{ulid}/products',[ProductController::class,'productByCategory']);
-Route::get('/categories',[CategoryController::class,'index']);
-Route::post('/search',[\App\Http\Controllers\SearchAndOrderController::class,'search']);
+Route::middleware(\App\Http\Middleware\CheckToken::class)->group(function () {
+    Route::get('/',[ProductController::class,'homePage']);
+    Route::get('/products',[ProductController::class,'index']);
+    Route::get('/products/{ulid}',[ProductController::class,'show']);
+    Route::get('/categories/{ulid}/products',[ProductController::class,'productByCategory']);
+    Route::get('/categories',[CategoryController::class,'index']);
+    Route::post('/search',[\App\Http\Controllers\SearchAndOrderController::class,'search']);
 
-Route::middleware(['throttle:once-per-10-seconds'])->group(function (){
+    Route::middleware(['throttle:once-per-10-seconds'])->group(function (){
 
-    Route::prefix('auth')->group(function () {
-        Route::post('/login', [AuthController::class, 'login']);
-        Route::post('/reset_password', [AuthController::class, 'resetPasswordUsingOldPassword']);
-    });
-
-    Route::prefix('dashboard')->group(function () {
-        Route::prefix('category')->group(function () {
-            Route::post('/', [CategoryController::class, 'store']);
-            Route::post('/{ulid}/update', [CategoryController::class, 'update']);
-            Route::post('/{ulid}/changeStatus', [CategoryController::class, 'changeStatus']);
+        Route::prefix('auth')->group(function () {
+            Route::post('/login', [AuthController::class, 'login']);
+            Route::post('/reset_password', [AuthController::class, 'resetPasswordUsingOldPassword']);
         });
 
-        Route::prefix('product')->group(function () {
-            Route::post('/', [ProductController::class, 'store']);
-            Route::post('/{ulid}/update', [ProductController::class, 'update']);
-            Route::post('/{ulid}/changeStatus', [ProductController::class, 'changeStatus']);
-        });
+        Route::prefix('dashboard')->middleware('auth:api')->group(function () {
+            Route::prefix('category')->group(function () {
+                Route::post('/', [CategoryController::class, 'store']);
+                Route::post('/{ulid}/update', [CategoryController::class, 'update']);
+                Route::post('/{ulid}/changeStatus', [CategoryController::class, 'changeStatus']);
+            });
 
+            Route::prefix('product')->group(function () {
+                Route::post('/', [ProductController::class, 'store']);
+                Route::post('/{ulid}/update', [ProductController::class, 'update']);
+                Route::post('/{ulid}/changeStatus', [ProductController::class, 'changeStatus']);
+            });
+
+        });
     });
+
 });

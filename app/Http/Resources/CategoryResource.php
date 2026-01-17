@@ -19,7 +19,7 @@ class CategoryResource extends JsonResource
             'id' => $this->ulid,
             'name' => $this->name,
             'is_active' =>$this->active,
-            'image' => $this->media?->path ? Storage::disk('public')->url('uploads/category/'."$this->id/images/".$this->media->path) : null,
+            'image' => $this->image ? Storage::disk('public')->url('uploads/category/'."$this->id/images/".$this->image) : null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
