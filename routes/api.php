@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SearchAndOrderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -17,7 +18,9 @@ Route::middleware(\App\Http\Middleware\CheckToken::class)->group(function () {
     Route::get('/products/{ulid}',[ProductController::class,'show']);
     Route::get('/categories/{ulid}/products',[ProductController::class,'productByCategory']);
     Route::get('/categories',[CategoryController::class,'index']);
-    Route::post('/search',[\App\Http\Controllers\SearchAndOrderController::class,'search']);
+    Route::post('/search',[SearchAndOrderController::class,'search']);
+    Route::post('/order',[SearchAndOrderController::class,'order']);
+    Route::post('/order/reorder',[SearchAndOrderController::class,'confirmConflictedOrder']);
 
     Route::middleware(['throttle:once-per-10-seconds'])->group(function (){
 

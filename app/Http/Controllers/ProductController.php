@@ -165,6 +165,7 @@ class ProductController extends Controller
 
     private function getHomeProduct(): array
     {
+
         $key = 'homeProduct';
 
         // 1️⃣ إذا موجود رجّعه
@@ -190,7 +191,7 @@ class ProductController extends Controller
 
             // 3️⃣ فلّش عدادات المنتجات من Redis → DB
             $this->flushAllProductViewsToDb($this->CACHE_VISITOR_KEY);
-            $this->flushAllProductViewsToDb($this->CACHE_ORDER_KEY);
+            $this->flushAllProductViewsToDb($this->CACHE_ORDER_KEY,'orders');
 
             // 4️⃣ ابنِ الكاش
             return Cache::remember($key, 3600, function () {
@@ -204,7 +205,7 @@ class ProductController extends Controller
         });
     }
 
-    private function flushAllProductViewsToDb(string $src): void
+    private function flushAllProductViewsToDb(string $src, string $column = 'visitor'): void
     {
         $tmp = $src.':flushing';
 
@@ -226,7 +227,7 @@ class ProductController extends Controller
 
             DB::table('products')
                 ->where('id', (int)$productId)
-                ->increment('visitor', $count);
+                ->increment($column, $count);
 
             Redis::hdel('products:views:inc', (string)$productId);
         }

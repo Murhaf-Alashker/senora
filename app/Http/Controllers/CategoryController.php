@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
@@ -31,7 +32,6 @@ class CategoryController extends Controller
             $category->image = $path;
             $category->save();
         }
-        $category->image = Storage::disk('public')->url($category->image);
         return response()->json(['message'=>'تم إنشاء الصنف الجديد بنجاح!','category' => new CategoryResource($category)]);
 
     }
@@ -47,7 +47,7 @@ class CategoryController extends Controller
             $info['image'] = $path;
         }
         $category->update($info);
-        $category->image = Storage::disk('public')->url($category->image);
+
         return response()->json(['message' => 'تم تحديث الصنف بنجاح!','category' => new CategoryResource($category)]);
     }
 
@@ -62,7 +62,13 @@ class CategoryController extends Controller
 
     private function validateCategory(Request $request, string $type = 'create'):array
     {
-        return $request->validate(['name'=>'required|unique:categories,name|max:255|min:3',
+        return $request->validate([ 'name' => [
+            'required',
+            'max:255',
+            'min:3',
+            Rule::unique('categories', 'name')
+                ->ignore($request->route('ulid'), 'ulid'),
+        ],
             'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
     }
