@@ -13,8 +13,8 @@ class SettingController extends Controller
             [
                 'instagram' => 'instagram.com',
                 'facebook' => 'facebook.com',
-                'whatsapp' => 'whatsapp.com',
-                'contact_us_email' => 'example@gmail.com',
+                'whatsapp' => '+963949768227',
+                'contact_us_email' => 'kadraemad52@gmail.com',
                 'wholesale_at' => 100,
             ]
         )->only(['whatsapp','facebook','instagram','contact_us_email','wholesale_at']));
@@ -24,7 +24,7 @@ class SettingController extends Controller
         $setting = $request->validate([
             'instagram' => 'required|string|max:255',
             'facebook' => 'required|string|max:255',
-            'contact_us_email' => 'required|string|max:255|email',
+            'contact_us_email' => 'required|string|max:255|email|ends_with:@gmail.com',
             'whatsapp' => 'required|string|size:13|starts_with:+963|regex:/^\+?[0-9]+$/',
             'wholesale_at' => 'required|integer|max:1000|min:1'
         ]);

@@ -4,15 +4,11 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SearchAndOrderController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\SettingController;
+use App\Http\Middleware\CheckToken;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    $p = \App\Enum\MediaType::type();
-    return $p;
-});
-
-Route::middleware(\App\Http\Middleware\CheckToken::class)->group(function () {
+Route::middleware(CheckToken::class)->group(function () {
     Route::get('/',[ProductController::class,'homePage']);
     Route::get('/products',[ProductController::class,'index']);
     Route::get('/products/{ulid}',[ProductController::class,'show']);
@@ -21,7 +17,7 @@ Route::middleware(\App\Http\Middleware\CheckToken::class)->group(function () {
     Route::post('/search',[SearchAndOrderController::class,'search']);
     Route::post('/order',[SearchAndOrderController::class,'order']);
     Route::post('/order/reorder',[SearchAndOrderController::class,'confirmConflictedOrder']);
-    Route::get('/settings',[\App\Http\Controllers\SettingController::class,'index']);
+    Route::get('/settings',[SettingController::class,'index']);
 
     Route::middleware(['throttle:once-per-10-seconds'])->group(function (){
 
@@ -43,7 +39,7 @@ Route::middleware(\App\Http\Middleware\CheckToken::class)->group(function () {
                 Route::post('/{ulid}/changeStatus', [ProductController::class, 'changeStatus']);
             });
 
-            Route::post('/settings/update', [\App\Http\Controllers\SettingController::class, 'update']);
+            Route::post('/settings/update', [SettingController::class, 'update']);
 
         });
     });

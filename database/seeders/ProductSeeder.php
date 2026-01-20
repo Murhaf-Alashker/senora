@@ -14,17 +14,17 @@ class ProductSeeder extends Seeder
      */
     public function run(): void
     {
-        $products = Product::factory(50)->create();
+        //$products = Product::factory(50)->create();
         User::factory()->create();
 
-        $categories = Category::pluck('id');
-
-        foreach ($products as $product) {
-            $randomCategories = $categories
-                ->random(rand(1, min($categories->count(),3)))
-                ->toArray();
-
-            $product->categories()->sync($randomCategories);
-        }
+//        $categories = Category::pluck('id');
+//
+//        foreach ($products as $product) {
+//            $randomCategories = $categories
+//                ->random(rand(1, min($categories->count(),3)))
+//                ->toArray();
+//
+//            $product->categories()->sync($randomCategories);
+//        }
     }
 }

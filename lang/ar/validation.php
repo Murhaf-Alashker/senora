@@ -48,7 +48,7 @@ return [
     'doesnt_end_with' => 'الحقل :attribute يجب ألا ينتهي بواحدة من القيم التالية: :values.',
     'doesnt_start_with' => 'الحقل :attribute يجب ألا يبدأ بواحدة من القيم التالية: :values.',
     'email' => 'يجب أن يكون :attribute عنوان بريد إلكتروني صحيح.',
-    'ends_with' => 'الـ :attribute يجب ان ينتهي بأحد القيم التالية :value.',
+    'ends_with' => 'الـ :attribute يجب ان ينتهي بأحد القيم التالية :values.',
     'enum' => 'حقل المحدد :attribute غير صالح.',
     'exists' => 'حقل المحدد :attribute غير صالح.',
     'file' => 'الـ :attribute يجب ان يكون ملف.',
@@ -225,6 +225,11 @@ return [
         'error'                 => 'خطأ',
         'errors'                => 'خطأ',
         'media.*'               => 'الوسائط',
+        'instagram'             => 'انستغرام',
+        'facebook'              => 'فيسبوك',
+        'contact_us_email'      => 'ايميل التواصل',
+        'whatsapp'              => 'واتساب',
+        'wholesale_at'          => 'الحد الادنى لسعر الجملة'
 
     ],
 
