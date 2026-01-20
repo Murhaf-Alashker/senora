@@ -21,6 +21,7 @@ Route::middleware(\App\Http\Middleware\CheckToken::class)->group(function () {
     Route::post('/search',[SearchAndOrderController::class,'search']);
     Route::post('/order',[SearchAndOrderController::class,'order']);
     Route::post('/order/reorder',[SearchAndOrderController::class,'confirmConflictedOrder']);
+    Route::get('/settings',[\App\Http\Controllers\SettingController::class,'index']);
 
     Route::middleware(['throttle:once-per-10-seconds'])->group(function (){
 
@@ -41,6 +42,8 @@ Route::middleware(\App\Http\Middleware\CheckToken::class)->group(function () {
                 Route::post('/{ulid}/update', [ProductController::class, 'update']);
                 Route::post('/{ulid}/changeStatus', [ProductController::class, 'changeStatus']);
             });
+
+            Route::post('/settings/update', [\App\Http\Controllers\SettingController::class, 'update']);
 
         });
     });

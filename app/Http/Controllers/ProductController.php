@@ -181,11 +181,11 @@ class ProductController extends Controller
 
     private function restoreAllCache():void
     {
-        $this->restoreCache($this->CACHE_VISITOR_KEY);
-        $this->restoreCache($this->CACHE_ORDER_KEY);
+        $this->restoreCache();
+        $this->restoreCache();
     }
 
-    private function restoreCache($key):void
+    private function restoreCache($key = 'homeProduct'):void
     {
         Cache::lock('homeProduct:rebuild', 20)->block(5, function () use ($key) {
 
@@ -194,6 +194,7 @@ class ProductController extends Controller
             $this->flushAllProductViewsToDb($this->CACHE_ORDER_KEY,'orders');
 
             // 4️⃣ ابنِ الكاش
+            Cache::forget($key);
             return Cache::remember($key, 3600, function () {
                 return [
                     'latest_products' => $this->latestProduct()->response()->getData(true),
