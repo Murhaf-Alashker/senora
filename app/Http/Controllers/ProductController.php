@@ -147,6 +147,7 @@ class ProductController extends Controller
         $product = Product::where('ulid',$ulid)->firstOrFail();
         $product->active = abs($product->active - 1);
         $product->save();
+        $this->restoreAllCache();
         return response()->json($message[$product->active]);
     }
 
@@ -181,7 +182,6 @@ class ProductController extends Controller
 
     private function restoreAllCache():void
     {
-        $this->restoreCache();
         $this->restoreCache();
     }
 
