@@ -32,7 +32,7 @@ class CreateProductRequest extends FormRequest
             'sizes' => ['required', 'array'],
             'sizes.*' => ['required', 'numeric','between:30,50','multiple_of:2'],
             'categories' => ['required', 'array'],
-            'categories.*' => ['required', 'exists:categories,id'],
+            'categories.*' => ['required', 'exists:categories,ulid'],
             'media' => ['sometimes', 'array'],
             'media.*' => ['required', 'file','mimes:'. implode(',',MediaType::images()),'max:7166'],
             'wanted_media' => ['sometimes', 'array'],
