@@ -71,18 +71,20 @@ class SearchAndOrderController extends Controller
         ]))['key'];
 
         if(!Redis::exists($key)){
-            return response()->json('الطلب خاطئ, يرجى اعادة الطلب وتاكيده خلال مدة اقصاها 5 دقائق');
+            return response()->json('الطلب خاطئ, يرجى اعادة الطلب وتاكيده خلال مدة اقصاها 5 دقائق',400);
         }
         $info = Redis::get($key);
         $info = json_decode($info,true);
         Redis::del($key);
         $products = $this->prepareForOrder($info);
-
+        if(count($products) === 0){
+            return response()->json('الطلب خاطئ, يرجى اعادة الطلب وتاكيده خلال مدة اقصاها 5 دقائق',400);
+        }
         foreach ($products as $product){
             Redis::hincrby('products:order:inc', (string)$product->id, 1);
         }
 
-        return response()->json('تم التاكد من صحة طلبك ,يتم ارسال الطلب عبر واتساب');
+        return response()->json(['message' => 'تم التاكد من صحة طلبك ,يتم ارسال الطلب عبر واتساب','products'=>$products]);
 
     }
 

@@ -12,6 +12,7 @@ enum MediaType:string
     case JPEG = 'jpeg';
     case PNG = 'png';
     case WEBP = 'webp';
+    case SVG = 'svg';
 
     public static function values(): array
     {
@@ -25,7 +26,7 @@ enum MediaType:string
 
     public static function images():array
     {
-        return array_map(fn($case) => $case->value, [self::JPG, self::JPEG, self::PNG, self::WEBP]);
+        return array_map(fn($case) => $case->value, [self::JPG, self::JPEG, self::PNG, self::WEBP, self::SVG]);
     }
 
     public static function videos():array

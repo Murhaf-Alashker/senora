@@ -89,7 +89,7 @@ class ProductController extends Controller
 
            $this->storeManyMedia($request, $product);
         }
-        $this->restoreAllCache();
+        Cache::forget('homeProduct');
         return response()->json(['message' =>'تم إنشاء المنتج الجديد بنجاح!','product' => new ProductResource($product->refresh()->load('media'))]);
     }
 
@@ -118,7 +118,7 @@ class ProductController extends Controller
         if($request->hasFile('media')){
             $this->storeManyMedia($request, $product);
         }
-        $this->restoreAllCache();
+        Cache::forget('homeProduct');
         return response()->json(['message' =>'تم تحديث المنتج بنجاح!','product' => new ProductResource($product->load('media'))]);
     }
     private function getType(string $extension):string
@@ -147,7 +147,7 @@ class ProductController extends Controller
         $product = Product::where('ulid',$ulid)->firstOrFail();
         $product->active = abs($product->active - 1);
         $product->save();
-        $this->restoreAllCache();
+        Cache::forget('homeProduct');
         return response()->json($message[$product->active]);
     }
 
