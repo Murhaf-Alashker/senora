@@ -82,7 +82,7 @@ class ProductController extends Controller
             'colors' => $this->avoidDuplicate($info['colors']),
             'sizes' => $this->avoidDuplicate($info['sizes']),
         ]);
-
+        $info['categories'] = Category::whereIn('ulid',$info['categories'])->pluck('id')->toArray();
         $product->categories()->sync($info['categories']);
 
         if($request->hasFile('media')){
